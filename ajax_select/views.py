@@ -3,30 +3,26 @@ from ajax_select import get_lookup
 from django.contrib.admin import site
 from django.db import models
 from django.http import HttpResponse
-try:
-    import json
-except ImportError:
-    from django.utils import simplejson as json
-from django.utils.encoding import force_text
 
 
 def ajax_lookup(request, channel):
-
     """ this view supplies results for foreign keys and many to many fields """
+
+    lookup = get_lookup(channel)
+    term = lookup.parameter_name
 
     # it should come in as GET unless global $.ajaxSetup({type:"POST"}) has been set
     # in which case we'll support POST
     if request.method == "GET":
         # we could also insist on an ajax request
-        if 'term' not in request.GET:
+        if term not in request.GET:
             return HttpResponse('')
-        query = request.GET['term']
+        query = request.GET[term]
     else:
-        if 'term' not in request.POST:
+        if term not in request.POST:
             return HttpResponse('')  # suspicious
-        query = request.POST['term']
+        query = request.POST[term]
 
-    lookup = get_lookup(channel)
     if hasattr(lookup, 'check_auth'):
         lookup.check_auth(request)
 
@@ -35,16 +31,9 @@ def ajax_lookup(request, channel):
     else:
         instances = []
 
-    results = json.dumps([
-        {
-            'pk': force_text(getattr(item, 'pk', None)),
-            'value': lookup.get_result(item),
-            'match': lookup.format_match(item),
-            'repr': lookup.format_item_display(item)
-        } for item in instances
-    ])
+    results, content_type = lookup.get_lookup_result(instances)
 
-    return HttpResponse(results, content_type='application/javascript')
+    return HttpResponse(results, content_type=content_type)
 
 
 def add_popup(request, app_label, model):

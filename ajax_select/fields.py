@@ -63,6 +63,8 @@ class AutoCompleteSelectWidget(forms.widgets.TextInput):
         self.channel = channel
         self.help_text = help_text
         self.show_help_text = show_help_text
+        self.content_type = kwargs.pop('content_type', None)
+        self.template = kwargs.pop('template', None)
 
     def render(self, name, value, attrs=None):
 
@@ -74,7 +76,7 @@ class AutoCompleteSelectWidget(forms.widgets.TextInput):
         initial = None
         lookup = get_lookup(self.channel)
         if value:
-            objs = lookup.get_objects([value])
+            objs = lookup.get_objects(*(([value], self.content_type) if self.content_type else [value]))
             try:
                 obj = objs[0]
             except IndexError:
@@ -99,7 +101,7 @@ class AutoCompleteSelectWidget(forms.widgets.TextInput):
         }
         context.update(plugin_options(lookup, self.channel, self.plugin_options, initial))
 
-        return mark_safe(render_to_string(('autocompleteselect_%s.html' % self.channel, 'autocompleteselect.html'), context))
+        return mark_safe(render_to_string((self.template, 'autocompleteselect_%s.html' % self.channel, 'autocompleteselect.html'), context))
 
     def value_from_datadict(self, data, files, name):
 

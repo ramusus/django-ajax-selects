@@ -13,6 +13,10 @@ from django.utils.text import capfirst
 from django.utils.encoding import force_text
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
+try:
+    import json
+except ImportError:
+    from django.utils import simplejson as json
 
 
 class LookupChannel(object):
@@ -22,6 +26,7 @@ class LookupChannel(object):
     model = None
     plugin_options = {}
     min_length = 1
+    parameter_name = 'term'
 
     def get_query(self, q, request):
         """ return a query set searching for the query string q
@@ -71,6 +76,18 @@ class LookupChannel(object):
         if not request.user.is_staff:
             raise PermissionDenied
 
+    def get_pk(self, obj):
+        return getattr(obj, 'pk', None)
+
+    def get_lookup_result(self, objects):
+        return json.dumps([
+            {
+                'pk': force_text(self.get_pk(item)),
+                'value': self.get_result(item),
+                'match': self.format_match(item),
+                'repr': self.format_item_display(item)
+            } for item in objects
+        ]), 'application/javascript'
 
 def make_ajax_form(model, fieldlist, superclass=ModelForm, show_help_text=False, **kwargs):
     """ Creates a ModelForm subclass with autocomplete fields
