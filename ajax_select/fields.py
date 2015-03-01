@@ -76,7 +76,7 @@ class AutoCompleteSelectWidget(forms.widgets.TextInput):
         initial = None
         lookup = get_lookup(self.channel)
         if value:
-            objs = lookup.get_objects(*(([value], self.content_type) if self.content_type else [value]))
+            objs = lookup.get_objects(*(([value], self.content_type) if self.content_type else [value],))
             try:
                 obj = objs[0]
             except IndexError:
